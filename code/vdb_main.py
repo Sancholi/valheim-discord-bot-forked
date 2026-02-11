@@ -180,6 +180,7 @@ async def mainloop(file):
             with open(file, encoding='utf-8', mode='r') as f:
                 f.seek(0,2)
                 while True:
+                    f.seek(f.tell())
                     line = f.readline()
                     if(re.search(pdeath, line)):
                         pname = re.search(pdeath, line).group(1)
