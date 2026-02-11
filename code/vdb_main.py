@@ -176,19 +176,24 @@ async def mainloop(file):
     try:
         testfile = open(file)
         testfile.close()
+        pos = None
         while not bot.is_closed():
             with open(file, encoding='utf-8', mode='r') as f:
-                f.seek(0,2)
-                while True:
-                    f.seek(f.tell())
-                    line = f.readline()
-                    if(re.search(pdeath, line)):
-                        pname = re.search(pdeath, line).group(1)
-                        await lchannel.send(':skull: **' + pname + '** just died!')
-                    if(re.search(pevent, line)):
-                        eventID = re.search(pevent, line).group(1)
-                        await lchannel.send(':loudspeaker: Random mob event: **' + eventID + '** has occurred')
-                    await asyncio.sleep(0.2)
+                if pos is None:
+                    f.seek(0, 2)
+                    pos = f.tell()
+                else:
+                    f.seek(pos)
+                line = f.readline()
+                pos = f.tell()
+            if line:
+                if(re.search(pdeath, line)):
+                    pname = re.search(pdeath, line).group(1)
+                    await lchannel.send(':skull: **' + pname + '** just died!')
+                if(re.search(pevent, line)):
+                    eventID = re.search(pevent, line).group(1)
+                    await lchannel.send(':loudspeaker: Random mob event: **' + eventID + '** has occurred')
+            await asyncio.sleep(0.2)
     except IOError:
         print('No valid log found, event reports disabled. Please check config.py')
         print('To generate server logs, run server with -logfile launch flag')
