@@ -3,7 +3,7 @@
 # IMPORTANT! You must have a log for event reports and death leaderboards
 # logs are achieved by using -logfile flag on launch, or by logging stdout
 # Windows Users use forward slashes
-file = '../fake_log.txt'
+file = '/home/user/valheim-discord-bot-forked/fake_log.txt'
 
 BOT_TOKEN = "YourBotToken1337"
 
