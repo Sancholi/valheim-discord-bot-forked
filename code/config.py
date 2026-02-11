@@ -3,12 +3,12 @@
 # IMPORTANT! You must have a log for event reports and death leaderboards
 # logs are achieved by using -logfile flag on launch, or by logging stdout
 # Windows Users use forward slashes
-file = '/abs/path/to/ur/vhslog.txt'
+file = '../dummy_server.log'
 
 BOT_TOKEN = "YourBotToken1337"
 
 # Make sure are seen between server and script host
-SERVER_ADDRESS = ("ur.ip.add.ress",PORT)
+SERVER_ADDRESS = ("ur.ip.add.ress", 2457)
 
 # Shows up in embeds for stats report
 SERVER_NAME = "Your server name here"
@@ -17,7 +17,7 @@ SERVER_NAME = "Your server name here"
 LOGCHAN_ID  = 1234567890
 
 # use a locked VC channel to report player count, if not, set as False
-USEVCSTATS = True
+USEVCSTATS = False
 
 # VCHANNEL - where the bot shows server ticker, must be voice channel
 VCHANNEL_ID = 1234567890
