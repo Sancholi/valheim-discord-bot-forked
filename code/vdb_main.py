@@ -15,8 +15,8 @@ import pandas as pd
 #Color init
 colorama.init()
 
-pdeath = '.*?Got character ZDOID from (\w+) : 0:0'
-pevent = '.*? Random event set:(\w+)'
+pdeath = r'.*?Got character ZDOID from (\w+) : 0:0'
+pevent = r'.*? Random event set:(\w+)'
 server_name = config.SERVER_NAME
 
 # discord.py 2.x requires intents; message_content is needed for prefix commands
