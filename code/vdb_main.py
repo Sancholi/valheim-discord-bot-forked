@@ -69,6 +69,7 @@ async def on_ready():
     if not _background_tasks_started:
         _background_tasks_started = True
         asyncio.create_task(mainloop(file))
+        asyncio.create_task(playertracker())
         if config.USEVCSTATS:
             asyncio.create_task(serverstatsupdate())
 
@@ -193,10 +194,35 @@ async def mainloop(file):
                 if(re.search(pevent, line)):
                     eventID = re.search(pevent, line).group(1)
                     await lchannel.send(':loudspeaker: Random mob event: **' + eventID + '** has occurred')
+                # if(re.search(pjoin, line)):
+                #     pname = re.search(pjoin, line).group(1)
+                #     await lchannel.send(':green_circle: **' + pname + '** has joined the server!')
             await asyncio.sleep(0.2)
     except IOError:
         print('No valid log found, event reports disabled. Please check config.py')
         print('To generate server logs, run server with -logfile launch flag')
+
+async def playertracker():
+    await bot.wait_until_ready()
+    lchannel = bot.get_channel(lchanID)
+    prev_players = set()
+    first_run = True
+    while not bot.is_closed():
+        try:
+            info = await a2s.aplayers(config.SERVER_ADDRESS)
+            current_players = {p.name for p in info if p.name}
+            if not first_run:
+                for name in current_players - prev_players:
+                    await lchannel.send(':green_circle: **' + name + '** joined the server!')
+                for name in prev_players - current_players:
+                    await lchannel.send(':red_circle: **' + name + '** left the server!')
+            else:
+                first_run = False
+            prev_players = current_players
+        except Exception:
+            pass
+        await asyncio.sleep(15)
+
 
 async def serverstatsupdate():
 	await bot.wait_until_ready()
