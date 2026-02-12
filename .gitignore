@@ -1,0 +1,10 @@
+# Config contains secrets - never commit
+code/config.py
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# VS Code
+.vscode/
