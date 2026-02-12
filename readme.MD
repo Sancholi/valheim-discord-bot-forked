@@ -49,3 +49,4 @@ Most limitations on information gathered are rather a result of the server logs 
 + Automatically create VC channel stats on new guild join
 + Change format of Random Mob Event to Embed type with unique formatting for each mob type
 + Create argument vars for top 10 for servers with more activity
+#test
