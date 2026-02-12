@@ -1,1 +1,0 @@
-# Valheim dummy log file - append lines below to trigger bot events

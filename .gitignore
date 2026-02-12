@@ -1,0 +1,7 @@
+code/config.py
+fake_log.txt
+temp.png
+csv/
+temp.png
+__pycache__/
+*.pyc
