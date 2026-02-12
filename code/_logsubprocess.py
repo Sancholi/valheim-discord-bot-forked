@@ -1,7 +1,7 @@
 from datetime import datetime
 import time, os, re
 import csv, asyncio
-from valve.source.a2s import ServerQuerier, NoResponseError
+import a2s
 import config
 
 pdeath = '.*?Got character ZDOID from (\w+) : 0:0'
@@ -13,24 +13,24 @@ async def timenow():
     return gettime
 
 async def writecsv():
-    while True:    
+    while True:
         try:
-            with ServerQuerier(config.SERVER_ADDRESS) as server:
-                with open('csv/playerstats.csv', 'a', newline='') as f:
-                    csvup = csv.writer(f, delimiter=',')  
-                    curtime, players = await timenow(), server.info()['player_count']
-                    csvup.writerow([curtime, players])
-                    print(curtime, players)
-        except NoResponseError:
+            info = a2s.info(config.SERVER_ADDRESS)
             with open('csv/playerstats.csv', 'a', newline='') as f:
-                csvup = csv.writer(f, delimiter=',')  
+                csvup = csv.writer(f, delimiter=',')
+                curtime, players = await timenow(), info.player_count
+                csvup.writerow([curtime, players])
+                print(curtime, players)
+        except Exception:
+            with open('csv/playerstats.csv', 'a', newline='') as f:
+                csvup = csv.writer(f, delimiter=',')
                 curtime, players = await timenow(), '0'
                 csvup.writerow([curtime, players])
                 print(curtime, 'Cannot connect to server')
         await asyncio.sleep(60)
 
 async def deathcount():
-    while True:           
+    while True:
         with open(log, encoding='utf-8', mode='r') as f:
             f.seek(0,2)
             while True:
@@ -44,7 +44,7 @@ async def deathcount():
                         print(curtime, pname, ' has died!')
                 await asyncio.sleep(0.2)
 
-loop = asyncio.get_event_loop()
-loop.create_task(deathcount())
-loop.create_task(writecsv())
-loop.run_forever()
+async def main():
+    await asyncio.gather(deathcount(), writecsv())
+
+asyncio.run(main())

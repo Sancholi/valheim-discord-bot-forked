@@ -1,24 +1,23 @@
-# Copy this file to config.py and fill in your values
-# NEVER commit config.py — it contains secrets
+# Still working on discord-side triggering
 
-# Path to your Valheim server log file
+# IMPORTANT! You must have a log for event reports and death leaderboards
+# logs are achieved by using -logfile flag on launch, or by logging stdout
 # Windows Users use forward slashes
-file = 'C:/path/to/your/valheim/server.log'
+file = '/home/user/valheim-discord-bot-forked/fake_log.txt'
 
-# Discord bot token from https://discord.com/developers/applications
 BOT_TOKEN = "YourBotToken1337"
 
-# Valheim server IP and query port
+# Make sure are seen between server and script host
 SERVER_ADDRESS = ("ur.ip.add.ress", 2457)
 
 # Shows up in embeds for stats report
 SERVER_NAME = "Your server name here"
 
-# LOGCHAIN - Discord channel ID where the bot posts death and event messages
-LOGCHAN_ID = 1234567890
+# LOGCHAIN - where the bot outputs death and random mob events
+LOGCHAN_ID  = 1234567890
 
-# Set to True to show player count in a voice channel name
+# use a locked VC channel to report player count, if not, set as False
 USEVCSTATS = False
 
-# Voice channel ID for server ticker (only used if USEVCSTATS = True)
+# VCHANNEL - where the bot shows server ticker, must be voice channel
 VCHANNEL_ID = 1234567890

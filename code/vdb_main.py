@@ -1,5 +1,5 @@
 import os, time, re, csv, discord, asyncio, config, emoji, sys, colorama, typing, signal, errno
-from valve.source.a2s import ServerQuerier, NoResponseError
+import a2s
 from matplotlib import pyplot as plt
 from datetime import datetime, timedelta
 from colorama import Fore, Style, init
@@ -18,7 +18,11 @@ colorama.init()
 pdeath = '.*?Got character ZDOID from (\w+) : 0:0'
 pevent = '.*? Random event set:(\w+)'
 server_name = config.SERVER_NAME
-bot = commands.Bot(command_prefix=';', help_command=None)
+
+# discord.py 2.x requires intents; message_content is needed for prefix commands
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix=';', intents=intents, help_command=None)
 
     # maybe in the future for reformatting output of random mob events
     # eventype = ['Skeletons', 'Blobs', 'Forest Trolls', 'Wolves', 'Surtlings']
@@ -35,7 +39,7 @@ async def timenow():
 
 # Basic file checking
 def check_csvs():
-    try: 
+    try:
         os.makedirs('csv')
     except OSError as e:
         if e.errno != errno.EEXIST:
@@ -53,21 +57,28 @@ def check_csvs():
 
 check_csvs()
 
+_background_tasks_started = False
+
 @bot.event
 async def on_ready():
+    global _background_tasks_started
     print(Fore.GREEN + f'Bot connected as {bot.user} :)' + Style.RESET_ALL)
     print('Log channel : %d' % (lchanID))
     if config.USEVCSTATS == True:
         print('VoIP channel: %d' % (chanID))
-        bot.loop.create_task(serverstatsupdate())
+    if not _background_tasks_started:
+        _background_tasks_started = True
+        asyncio.create_task(mainloop(file))
+        if config.USEVCSTATS:
+            asyncio.create_task(serverstatsupdate())
 
 @bot.command(name='help')
-async def help_ctx(ctx):  
+async def help_ctx(ctx):
     help_embed = discord.Embed(description="[**Valheim Discord Bot**](https://github.com/ckbaudio/valheim-discord-bot)", color=0x33a163,)
     help_embed.add_field(name="{}stats <n>".format(bot.command_prefix),
                         value="Plots a graph of connected players over the last X hours.\n Example: `{}stats 12` \n Available: 24, 12, w (*default: 24*)".format(bot.command_prefix),
                         inline=True)
-    help_embed.add_field(name="{}deaths".format(bot.command_prefix), 
+    help_embed.add_field(name="{}deaths".format(bot.command_prefix),
                         value="Shows a top 5 leaderboard of players with the most deaths. \n Example:`{}deaths`".format(bot.command_prefix),
                         inline=True)
     help_embed.set_footer(text="Valbot v0.42")
@@ -85,13 +96,13 @@ async def leaderboards(ctx):
     for ind in df_index:
         grammarnazi = 'deaths'
         leader = ''
-        # print(df_index[x], df_score[x]) 
-        if df_score[x] == 1 :
+        # print(df_index[x], df_score[x])
+        if df_score.iloc[x] == 1 :
             grammarnazi = 'death'
         if l == 1:
             leader = ':crown:'
         ldrembed.add_field(name="{} {}".format(df_index[x],leader),
-                           value='{} {}'.format(df_score[x],grammarnazi),
+                           value='{} {}'.format(df_score.iloc[x],grammarnazi),
                            inline=False)
         x += 1
         l += 1
@@ -125,10 +136,13 @@ async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
     last24 = df[df[0]>=(lastday)]
 
     # Plot formatting / styling matplotlib
-    plt.style.use('seaborn-pastel')
+    try:
+        plt.style.use('seaborn-v0_8-pastel')
+    except OSError:
+        plt.style.use('seaborn-pastel')
     plt.minorticks_off()
     fig, ax = plt.subplots()
-    ax.grid(b=True, alpha=0.2)
+    ax.grid(True, alpha=0.2)
     ax.set_xlim(lastday, datetime.now())
     # ax.set_ylim(0, 10) Not sure about this one yet
     for axis in [ax.xaxis, ax.yaxis]:
@@ -141,7 +155,7 @@ async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
         tick.set_color('gray')
     for tick in ax.get_yticklabels():
         tick.set_color('gray')
-    
+
     #Plot and rasterize figure
     plt.gcf().set_size_inches([5.5,3.0])
     plt.plot(last24[0], last24[1])
@@ -162,35 +176,40 @@ async def mainloop(file):
     try:
         testfile = open(file)
         testfile.close()
+        pos = None
         while not bot.is_closed():
             with open(file, encoding='utf-8', mode='r') as f:
-                f.seek(0,2)
-                while True:
-                    line = f.readline()
-                    if(re.search(pdeath, line)):
-                        pname = re.search(pdeath, line).group(1)
-                        await lchannel.send(':skull: **' + pname + '** just died!')
-                    if(re.search(pevent, line)):
-                        eventID = re.search(pevent, line).group(1)
-                        await lchannel.send(':loudspeaker: Random mob event: **' + eventID + '** has occurred')
-                    await asyncio.sleep(0.2)
+                if pos is None:
+                    f.seek(0, 2)
+                    pos = f.tell()
+                else:
+                    f.seek(pos)
+                line = f.readline()
+                pos = f.tell()
+            if line:
+                if(re.search(pdeath, line)):
+                    pname = re.search(pdeath, line).group(1)
+                    await lchannel.send(':skull: **' + pname + '** just died!')
+                if(re.search(pevent, line)):
+                    eventID = re.search(pevent, line).group(1)
+                    await lchannel.send(':loudspeaker: Random mob event: **' + eventID + '** has occurred')
+            await asyncio.sleep(0.2)
     except IOError:
         print('No valid log found, event reports disabled. Please check config.py')
-        print('To generate server logs, run server with -logfile launch flag')  
-        
+        print('To generate server logs, run server with -logfile launch flag')
+
 async def serverstatsupdate():
 	await bot.wait_until_ready()
 	while not bot.is_closed():
 		try:
-			with ServerQuerier(config.SERVER_ADDRESS) as server:
-				channel = bot.get_channel(chanID)
-				await channel.edit(name=f"{emoji.emojize(':eggplant:')} In-Game: {server.info()['player_count']}" +" / 10")
+			info = await a2s.ainfo(config.SERVER_ADDRESS)
+			channel = bot.get_channel(chanID)
+			await channel.edit(name=f"{emoji.emojize(':eggplant:')} In-Game: {info.player_count}" +" / 10")
 
-		except NoResponseError:
+		except Exception:
 			print(Fore.RED + await timenow(), 'No reply from A2S, retrying (30s)...' + Style.RESET_ALL)
 			channel = bot.get_channel(chanID)
 			await channel.edit(name=f"{emoji.emojize(':cross_mark:')} Server Offline")
 		await asyncio.sleep(30)
-        
-bot.loop.create_task(mainloop(file))
+
 bot.run(config.BOT_TOKEN)

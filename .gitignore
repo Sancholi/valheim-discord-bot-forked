@@ -1,10 +1,7 @@
-# Config contains secrets - never commit
 code/config.py
-
-# Python
+fake_log.txt
+temp.png
+csv/
+temp.png
 __pycache__/
 *.pyc
-*.pyo
-
-# VS Code
-.vscode/
