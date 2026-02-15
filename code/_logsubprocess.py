@@ -4,7 +4,7 @@ import csv, asyncio
 import a2s
 import config
 
-pdeath = '.*?Got character ZDOID from (\w+) : 0:0'
+pdeath = r'.*?Got character ZDOID from (\w+) : 0:0'
 log = config.file
 
 async def timenow():
@@ -21,12 +21,12 @@ async def writecsv():
                 curtime, players = await timenow(), info.player_count
                 csvup.writerow([curtime, players])
                 print(curtime, players)
-        except Exception:
+        except Exception as e:
             with open('csv/playerstats.csv', 'a', newline='') as f:
                 csvup = csv.writer(f, delimiter=',')
                 curtime, players = await timenow(), '0'
                 csvup.writerow([curtime, players])
-                print(curtime, 'Cannot connect to server')
+                print(curtime, e)
         await asyncio.sleep(60)
 
 async def deathcount():
