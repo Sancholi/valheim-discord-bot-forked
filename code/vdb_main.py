@@ -17,6 +17,9 @@ colorama.init()
 
 pdeath = '.*?Got character ZDOID from (\w+) : 0:0'
 pevent = '.*? Random event set:(\w+)'
+pjoin  = r'.*?Got character ZDOID from (\w+) : (?!0:0)\S+'
+psteam = r'.*?Got connection SteamID (\d+)'
+pclose = r'.*?Closing socket (\d+)'
 server_name = config.SERVER_NAME
 
 # discord.py 2.x requires intents; message_content is needed for prefix commands
@@ -177,6 +180,8 @@ async def mainloop(file):
         testfile = open(file)
         testfile.close()
         pos = None
+        online_players = {}   # name -> steamid
+        pending_steamid = None
         while not bot.is_closed():
             with open(file, encoding='utf-8', mode='r') as f:
                 if pos is None:
@@ -193,6 +198,20 @@ async def mainloop(file):
                 if(re.search(pevent, line)):
                     eventID = re.search(pevent, line).group(1)
                     await lchannel.send(':loudspeaker: Random mob event: **' + eventID + '** has occurred')
+                if(re.search(psteam, line)):
+                    pending_steamid = re.search(psteam, line).group(1)
+                if(re.search(pjoin, line)):
+                    pname = re.search(pjoin, line).group(1)
+                    if pname not in online_players:
+                        online_players[pname] = pending_steamid
+                        pending_steamid = None
+                        await lchannel.send(':green_circle: **' + pname + '** has joined the server!')
+                if(re.search(pclose, line)):
+                    sid = re.search(pclose, line).group(1)
+                    left = [n for n, s in online_players.items() if s == sid]
+                    for name in left:
+                        del online_players[name]
+                        await lchannel.send(':red_circle: **' + name + '** has left the server')
             await asyncio.sleep(0.2)
     except IOError:
         print('No valid log found, event reports disabled. Please check config.py')
