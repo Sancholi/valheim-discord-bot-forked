@@ -178,6 +178,8 @@ async def mainloop(file):
         testfile = open(file)
         testfile.close()
         pos = None
+        online_players = {}   # name -> steamid
+        pending_steamid = None
         while not bot.is_closed():
             with open(file, encoding='utf-8', mode='r') as f:
                 if pos is None:
