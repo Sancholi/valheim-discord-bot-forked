@@ -15,11 +15,8 @@ import pandas as pd
 #Color init
 colorama.init()
 
-pdeath = '.*?Got character ZDOID from (\w+) : 0:0'
-pevent = '.*? Random event set:(\w+)'
-pjoin  = r'.*?Got character ZDOID from (\w+) : (?!0:0)\S+'
-psteam = r'.*?Got connection SteamID (\d+)'
-pclose = r'.*?Closing socket (\d+)'
+pdeath = r'.*?Got character ZDOID from (\w+) : 0:0'
+pevent = r'.*? Random event set:(\w+)'
 server_name = config.SERVER_NAME
 
 # discord.py 2.x requires intents; message_content is needed for prefix commands
@@ -72,6 +69,7 @@ async def on_ready():
     if not _background_tasks_started:
         _background_tasks_started = True
         asyncio.create_task(mainloop(file))
+        asyncio.create_task(playertracker())
         if config.USEVCSTATS:
             asyncio.create_task(serverstatsupdate())
 
@@ -198,24 +196,35 @@ async def mainloop(file):
                 if(re.search(pevent, line)):
                     eventID = re.search(pevent, line).group(1)
                     await lchannel.send(':loudspeaker: Random mob event: **' + eventID + '** has occurred')
-                if(re.search(psteam, line)):
-                    pending_steamid = re.search(psteam, line).group(1)
-                if(re.search(pjoin, line)):
-                    pname = re.search(pjoin, line).group(1)
-                    if pname not in online_players:
-                        online_players[pname] = pending_steamid
-                        pending_steamid = None
-                        await lchannel.send(':green_circle: **' + pname + '** has joined the server!')
-                if(re.search(pclose, line)):
-                    sid = re.search(pclose, line).group(1)
-                    left = [n for n, s in online_players.items() if s == sid]
-                    for name in left:
-                        del online_players[name]
-                        await lchannel.send(':red_circle: **' + name + '** has left the server')
+                # if(re.search(pjoin, line)):
+                #     pname = re.search(pjoin, line).group(1)
+                #     await lchannel.send(':green_circle: **' + pname + '** has joined the server!')
             await asyncio.sleep(0.2)
     except IOError:
         print('No valid log found, event reports disabled. Please check config.py')
         print('To generate server logs, run server with -logfile launch flag')
+
+async def playertracker():
+    await bot.wait_until_ready()
+    lchannel = bot.get_channel(lchanID)
+    prev_players = set()
+    first_run = True
+    while not bot.is_closed():
+        try:
+            info = await a2s.aplayers(config.SERVER_ADDRESS)
+            current_players = {p.name for p in info if p.name}
+            if not first_run:
+                for name in current_players - prev_players:
+                    await lchannel.send(':green_circle: **' + name + '** joined the server!')
+                for name in prev_players - current_players:
+                    await lchannel.send(':red_circle: **' + name + '** left the server!')
+            else:
+                first_run = False
+            prev_players = current_players
+        except Exception:
+            pass
+        await asyncio.sleep(15)
+
 
 async def serverstatsupdate():
 	await bot.wait_until_ready()
