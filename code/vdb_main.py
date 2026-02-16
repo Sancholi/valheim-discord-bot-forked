@@ -238,6 +238,6 @@ async def serverstatsupdate():
 			print(Fore.RED + await timenow(), 'No reply from A2S, retrying (30s)...' + Style.RESET_ALL)
 			channel = bot.get_channel(chanID)
 			await channel.edit(name=f"{emoji.emojize(':cross_mark:')} Server Offline")
-		await asyncio.sleep(30)
+		await asyncio.sleep(300)
 
 bot.run(config.BOT_TOKEN)
