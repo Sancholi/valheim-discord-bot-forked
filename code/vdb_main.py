@@ -111,8 +111,6 @@ async def leaderboards(ctx):
         l += 1
     await ctx.send(embed=ldrembed)
 
-@bot.command(name="stats")
-
 def parse_timeframe(tmf: str):
     now = datetime.now()
     tmf = tmf.strip().lower()
@@ -124,7 +122,7 @@ def parse_timeframe(tmf: str):
     if not m:
         raise ValueError("Use format `<n>h`, `<n>d`, `<n>m`, or `<n>y` — e.g. `6h`, `3d`, `2m`, `1y`")
     
-    n, unit = init(m.group(1)), m.group(2)
+    n, unit = int(m.group(1)), m.group(2)
 
     if unit == 'h':
         if not 1 <= n <= 24:
@@ -161,6 +159,7 @@ def parse_timeframe(tmf: str):
 
     return lastday, interval, date_format, f"Players online in the past {label}:"
 
+@bot.command(name="stats")
 async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
     # user_range = 0
     # if tmf.lower() in ['w', 'week', 'weeks']:
@@ -185,6 +184,7 @@ async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
     #Get data from csv
     # df = pd.read_csv('csv/playerstats.csv', header=None, usecols=[0, 1], parse_dates=[0], dayfirst=True)
     # lastday = datetime.now() - timedelta(hours = user_range)
+    # last24 = df[df[0]>=(lastday)]
 
     try:
         lastday, interval, date_format, description = parse_timeframe(tmf)
@@ -192,9 +192,7 @@ async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
         await ctx.send(str(e))
         return
 
-    last24 = df[df[0]>=(lastday)]
-
-    df = pd.read_csv('csv/playerstats.csv', ...)
+    df = pd.read_csv('csv/playerstats.csv', header=None, usecols=[0, 1], parse_dates=[0], dayfirst=True)
     last24 = df[df[0] >= lastday]
 
 
