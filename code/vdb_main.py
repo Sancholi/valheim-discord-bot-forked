@@ -79,7 +79,7 @@ async def on_ready():
 async def help_ctx(ctx):
     help_embed = discord.Embed(description="[**Valheim Discord Bot**](https://github.com/ckbaudio/valheim-discord-bot)", color=0x33a163,)
     help_embed.add_field(name="{}stats <n>".format(bot.command_prefix),
-                        value="Plots a graph of connected players over the last X hours.\n Example: `{}stats 12` \n Available: 24, 12, w (*default: 24*)".format(bot.command_prefix),
+                        value="Plots a graph of connected players over the last X hours.\n Example: `{}stats 12` <n><unit> - eg: 6h, 3d, 2m, 1y.\n Available: 24, 12, w (*default: 24*)".format(bot.command_prefix),
                         inline=True)
     help_embed.add_field(name="{}deaths".format(bot.command_prefix),
                         value="Shows a top 5 leaderboard of players with the most deaths. \n Example:`{}deaths`".format(bot.command_prefix),
@@ -162,10 +162,7 @@ def parse_timeframe(tmf: str):
     return lastday, interval, date_format, f"Players online in the past {label}:"
 
 async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
-    user_range = 0
-
-
-
+    # user_range = 0
     # if tmf.lower() in ['w', 'week', 'weeks']:
     #     user_range = 168 - 1
     #     interval = 24
@@ -188,13 +185,14 @@ async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
     #Get data from csv
     # df = pd.read_csv('csv/playerstats.csv', header=None, usecols=[0, 1], parse_dates=[0], dayfirst=True)
     # lastday = datetime.now() - timedelta(hours = user_range)
-    # last24 = df[df[0]>=(lastday)]
 
     try:
         lastday, interval, date_format, description = parse_timeframe(tmf)
     except ValueError as e:
         await ctx.send(str(e))
         return
+
+    last24 = df[df[0]>=(lastday)]
 
     df = pd.read_csv('csv/playerstats.csv', ...)
     last24 = df[df[0] >= lastday]
