@@ -7,6 +7,8 @@ from config import LOGCHAN_ID as lchanID
 from config import VCHANNEL_ID as chanID
 from config import file
 from discord.ext import commands
+from dateutil.relativedelta import relativedelta
+import calendar
 import matplotlib.dates as md
 import matplotlib.ticker as ticker
 import matplotlib.spines as ms
@@ -110,31 +112,93 @@ async def leaderboards(ctx):
     await ctx.send(embed=ldrembed)
 
 @bot.command(name="stats")
+
+def parse_timeframe(tmf: str):
+    now = datetime.now()
+    tmf = tmf.strip().lower()
+
+    aliases = {'12': '12h', '24': '24h', 'w': '7d', 'week': '7d', 'weeks': '7d'}
+    tmf = aliases.get(tmf, tmf)
+
+    m = re.fullmatch(r'(\d+)(h|d|m|y)', tmf)
+    if not m:
+        raise ValueError("Use format `<n>h`, `<n>d`, `<n>m`, or `<n>y` — e.g. `6h`, `3d`, `2m`, `1y`")
+    
+    n, unit = init(m.group(1)), m.group(2)
+
+    if unit == 'h':
+        if not 1 <= n <= 24:
+            raise ValueError("Hours must be between 1 and 24.")
+        lastday = now - timedelta(hours=n)
+        interval = max(1, n // 12)
+        date_format = '%H:%M'
+        label = f"{n}h"
+
+    elif unit == 'd':
+        max_days = calendar.monthrange(now.year, now.month)[1]
+        if not 1 <= n <= max_days:
+            raise ValueError(f"Days must be between 1 and {max_days}.")
+        lastday = now - timedelta(days=n)
+        interval = 24 if n <= 7 else 48
+        date_format = '%m/%d'
+        label = f"{n}d"
+
+    elif unit == 'm':
+        if not 1 <= n <= 12:
+            raise ValueError("Months must be between 1 and 12.")
+        lastday = now - relativedelta(months=n)
+        interval = 24 * 7
+        date_format = '%m/%d'
+        label = f"{n}mo"
+
+    elif unit == 'y':
+        if n < 1:
+            raise ValueError("Years must be 1 or more.")
+        lastday = now - relativedelta(years=n)
+        interval = 24 * 30
+        date_format = '%b %Y'
+        label = f"{n}y"
+
+    return lastday, interval, date_format, f"Players online in the past {label}:"
+
 async def gen_plot(ctx, tmf: typing.Optional[str] = '24'):
     user_range = 0
-    if tmf.lower() in ['w', 'week', 'weeks']:
-        user_range = 168 - 1
-        interval = 24
-        date_format = '%m/%d'
-        timedo = 'week'
-        description = 'Players online in the past ' + timedo + ':'
-    elif tmf.lower() in ['12', '12hrs', '12h', '12hr']:
-        user_range = 12 - 0.15
-        interval = 1
-        date_format = '%H'
-        timedo = '12hrs'
-        description = 'Players online in the past ' + timedo + ':'
-    else:
-        user_range = 24 - 0.30
-        interval = 2
-        date_format = '%H'
-        timedo = '24hrs'
-        description = 'Players online in the past ' + timedo + ':'
+
+
+
+    # if tmf.lower() in ['w', 'week', 'weeks']:
+    #     user_range = 168 - 1
+    #     interval = 24
+    #     date_format = '%m/%d'
+    #     timedo = 'week'
+    #     description = 'Players online in the past ' + timedo + ':'
+    # elif tmf.lower() in ['12', '12hrs', '12h', '12hr']:
+    #     user_range = 12 - 0.15
+    #     interval = 1
+    #     date_format = '%H'
+    #     timedo = '12hrs'
+    #     description = 'Players online in the past ' + timedo + ':'
+    # else:
+    #     user_range = 24 - 0.30
+    #     interval = 2
+    #     date_format = '%H'
+    #     timedo = '24hrs'
+    #     description = 'Players online in the past ' + timedo + ':'
 
     #Get data from csv
-    df = pd.read_csv('csv/playerstats.csv', header=None, usecols=[0, 1], parse_dates=[0], dayfirst=True)
-    lastday = datetime.now() - timedelta(hours = user_range)
-    last24 = df[df[0]>=(lastday)]
+    # df = pd.read_csv('csv/playerstats.csv', header=None, usecols=[0, 1], parse_dates=[0], dayfirst=True)
+    # lastday = datetime.now() - timedelta(hours = user_range)
+    # last24 = df[df[0]>=(lastday)]
+
+    try:
+        lastday, interval, date_format, description = parse_timeframe(tmf)
+    except ValueError as e:
+        await ctx.send(str(e))
+        return
+
+    df = pd.read_csv('csv/playerstats.csv', ...)
+    last24 = df[df[0] >= lastday]
+
 
     # Plot formatting / styling matplotlib
     try:
